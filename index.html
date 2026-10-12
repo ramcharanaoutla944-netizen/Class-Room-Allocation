@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Classroom Allocation</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f4f7fb;color:#172033}
+header{background:linear-gradient(135deg,#172554,#2563eb);color:white;padding:28px 5%;box-shadow:0 4px 18px #0002}
+header h1{margin:0 0 7px;font-size:30px} header p{margin:0;opacity:.9}
+.container{width:90%;max-width:1250px;margin:24px auto}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.card{background:white;border-radius:16px;padding:20px;box-shadow:0 5px 20px #17255412;margin-bottom:20px}
+.card h2{margin:0 0 16px;font-size:20px}
+.formgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+label{font-size:13px;font-weight:700;color:#526071}
+input,select{width:100%;padding:11px;border:1px solid #d8dee9;border-radius:9px;margin-top:5px;background:#fff}
+button{border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer}
+.primary{background:#2563eb;color:white}.secondary{background:#e8eefc;color:#1d4ed8}
+.danger{background:#fee2e2;color:#b91c1c}.run{background:#16a34a;color:white;width:100%;font-size:16px;padding:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px;border-bottom:1px solid #e8edf3;text-align:left}
+th{background:#f8fafc}.tag{padding:4px 8px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block}
+.ok{background:#dcfce7;color:#166534}.bad{background:#fee2e2;color:#991b1b}.warn{background:#fef3c7;color:#92400e}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat{background:white;padding:16px;border-radius:13px;text-align:center;box-shadow:0 4px 15px #0000000c}.stat b{font-size:26px;color:#2563eb;display:block}
+.timeline{display:grid;grid-template-columns:90px repeat(6,1fr);overflow:auto}
+.cell{min-height:75px;border:1px solid #e5e7eb;padding:7px;font-size:12px}.head{background:#eff6ff;font-weight:700}.classbox{background:#dbeafe;border-left:4px solid #2563eb;border-radius:6px;padding:7px;margin-bottom:4px}
+.small{font-size:12px;color:#64748b}.empty{color:#94a3b8;text-align:center;padding:20px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<h1>🎓 Smart Classroom Allocation</h1>
+<p>DAA Hackathon Project • Constraint-based room allocation using Greedy Graph Coloring</p>
+</header>
+<div class="container">
+
+<div class="stats">
+<div class="stat"><b id="roomCount">0</b>Rooms</div>
+<div class="stat"><b id="classCount">0</b>Classes</div>
+<div class="stat"><b id="allocated">0</b>Allocated</div>
+<div class="stat"><b id="conflicts">0</b>Conflicts</div>
+</div>
+
+<div class="grid">
+<div>
+<div class="card">
+<h2>🏫 Add Classroom</h2>
+<div class="formgrid">
+<div><label>Room ID</label><input id="roomId" placeholder="C-101"></div>
+<div><label>Capacity</label><input id="capacity" type="number" placeholder="60"></div>
+<div><label>Department</label><input id="roomDept" placeholder="CSE"></div>
+<div><label>Equipment</label><input id="equipment" placeholder="Projector, Lab PCs"></div>
+</div><br><button class="primary" onclick="addRoom()">+ Add Room</button>
+</div>
+
+<div class="card">
+<h2>📚 Add Class</h2>
+<div class="formgrid">
+<div><label>Class / Subject</label><input id="className" placeholder="Data Structures"></div>
+<div><label>Department</label><input id="classDept" placeholder="CSE"></div>
+<div><label>Students</label><input id="students" type="number" placeholder="55"></div>
+<div><label>Equipment Required</label><input id="classEquip" placeholder="Projector"></div>
+<div><label>Day</label><select id="day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select></div>
+<div><label>Time Slot</label><select id="slot"><option value="1">09:00 - 10:00</option><option value="2">10:00 - 11:00</option><option value="3">11:00 - 12:00</option><option value="4">12:00 - 13:00</option><option value="5">14:00 - 15:00</option><option value="6">15:00 - 16:00</option></select></div>
+</div><br><button class="primary" onclick="addClass()">+ Add Class</button>
+</div>
+</div>
+
+<div>
+<div class="card">
+<h2>⚙️ Current Classrooms</h2>
+<div id="roomsTable" class="small"></div>
+</div>
+<div class="card">
+<h2>📋 Current Classes</h2>
+<div id="classesTable" class="small"></div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h2>🚀 Allocation Engine</h2>
+<p class="small">The algorithm prioritizes difficult classes first, then selects the first feasible classroom with enough capacity, matching department and all required equipment. A room cannot receive two classes in the same day/time slot.</p>
+<button class="run" onclick="allocate()">Run Smart Allocation</button>
+</div>
+
+<div class="card">
+<h2>📊 Allocation Results</h2>
+<div id="result"><div class="empty">Run the allocation engine to see results.</div></div>
+</div>
+
+<div class="card">
+<h2>🗓️ Timetable</h2>
+<div id="timetable"><div class="empty">No allocation yet.</div></div>
+</div>
+</div>
+
+<script>
+let rooms = [
+ {id:"C-101",capacity:60,dept:"CSE",equipment:["Projector","AC"]},
+ {id:"C-102",capacity:80,dept:"CSE",equipment:["Projector","Lab PCs"]},
+ {id:"E-201",capacity:70,dept:"ECE",equipment:["Projector","AC"]},
+ {id:"M-301",capacity:50,dept:"MECH",equipment:["Projector"]}
+];
+let classes = [
+ {name:"Data Structures",dept:"CSE",students:55,equip:["Projector"],day:"Monday",slot:1},
+ {name:"DBMS",dept:"CSE",students:45,equip:["Projector"],day:"Monday",slot:2},
+ {name:"Digital Electronics",dept:"ECE",students:65,equip:["Projector","AC"],day:"Monday",slot:1},
+ {name:"Operating Systems",dept:"CSE",students:75,equip:["Projector","Lab PCs"],day:"Monday",slot:3},
+ {name:"Thermodynamics",dept:"MECH",students:40,equip:["Projector"],day:"Tuesday",slot:1}
+];
+let allocation=[];
+
+function addRoom(){
+ const id=v("roomId"), capacity=+v("capacity"), dept=v("roomDept").toUpperCase(), equipment=parse(v("equipment"));
+ if(!id||!capacity||!dept)return alert("Please fill Room ID, capacity and department.");
+ rooms.push({id,capacity,dept,equipment}); render();
+ ["roomId","capacity","roomDept","equipment"].forEach(x=>document.getElementById(x).value="");
+}
+function addClass(){
+ const name=v("className"), dept=v("classDept").toUpperCase(), students=+v("students"), equip=parse(v("classEquip"));
+ if(!name||!dept||!students)return alert("Please fill class, department and students.");
+ classes.push({name,dept,students,equip,day:v("day"),slot:+v("slot")}); render();
+ ["className","classDept","students","classEquip"].forEach(x=>document.getElementById(x).value="");
+}
+function v(id){return document.getElementById(id).value.trim()}
+function parse(s){return s?s.split(",").map(x=>x.trim().toLowerCase()).filter(Boolean):[]}
+function hasEquipment(room,req){return req.every(x=>room.equipment.map(y=>y.toLowerCase()).includes(x))}
+function feasible(r,c){
+ return r.capacity>=c.students && (r.dept===c.dept || r.dept==="GENERAL") && hasEquipment(r,c.equip)
+}
+function allocate(){
+ allocation=[]; let used={}; let failed=[];
+ // DAA idea: sort by constraint/difficulty (DSATUR-inspired priority)
+ let ordered=[...classes].sort((a,b)=>{
+   const da=a.students + a.equip.length*20 + (a.dept?15:0);
+   const db=b.students + b.equip.length*20 + (b.dept?15:0);
+   return db-da;
+ });
+ ordered.forEach(c=>{
+   let candidates=rooms.filter(r=>feasible(r,c) && !(used[r.id]||[]).includes(c.day+"-"+c.slot));
+   candidates.sort((a,b)=> (a.capacity-c.students)-(b.capacity-c.students));
+   if(candidates.length){
+     let r=candidates[0];
+     allocation.push({...c,room:r.id,status:"Allocated"});
+     used[r.id]=used[r.id]||[]; used[r.id].push(c.day+"-"+c.slot);
+   }else{
+     allocation.push({...c,room:"—",status:"Not Allocated"});
+     failed.push(c);
+   }
+ });
+ renderResults(failed); renderTimetable(); renderStats();
+}
+function render(){
+ document.getElementById("roomCount").textContent=rooms.length;
+ document.getElementById("classCount").textContent=classes.length;
+ document.getElementById("roomsTable").innerHTML=`<table><tr><th>Room</th><th>Cap.</th><th>Dept.</th><th>Equipment</th></tr>`+
+ rooms.map(r=>`<tr><td>${r.id}</td><td>${r.capacity}</td><td>${r.dept}</td><td>${r.equipment.join(", ")}</td></tr>`).join("")+"</table>";
+ document.getElementById("classesTable").innerHTML=`<table><tr><th>Class</th><th>Dept.</th><th>Students</th><th>Schedule</th></tr>`+
+ classes.map(c=>`<tr><td>${c.name}</td><td>${c.dept}</td><td>${c.students}</td><td>${c.day}<br>${slotText(c.slot)}</td></tr>`).join("")+"</table>";
+ renderStats();
+}
+function renderResults(failed){
+ if(!allocation.length)return;
+ document.getElementById("result").innerHTML=`<table><tr><th>Class</th><th>Schedule</th><th>Room</th><th>Reason / Status</th></tr>`+
+ allocation.map(a=>{
+  let reason=a.status==="Allocated"?`<span class="tag ok">✓ Allocated</span>`:`<span class="tag bad">✗ No feasible room</span>`;
+  return `<tr><td><b>${a.name}</b><br><span class="small">${a.dept} • ${a.students} students</span></td><td>${a.day}<br>${slotText(a.slot)}</td><td>${a.room}</td><td>${reason}</td></tr>`
+ }).join("")+"</table>"+
+ (failed.length?`<p><span class="tag warn">${failed.length} class(es) need attention.</span> Try adding a larger room, matching department room, or required equipment.</p>`:"<p><span class=\"tag ok\">All classes successfully allocated.</span></p>");
+}
+function renderTimetable(){
+ const days=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+ let html=`<div class="timeline"><div class="cell head">Time</div>`+days.map(d=>`<div class="cell head">${d}</div>`).join("");
+ for(let s=1;s<=6;s++){
+  html+=`<div class="cell head">${slotText(s)}</div>`;
+  days.forEach(d=>{
+   let items=allocation.filter(a=>a.day===d&&a.slot===s&&a.status==="Allocated");
+   html+=`<div class="cell">${items.map(a=>`<div class="classbox"><b>${a.name}</b><br>${a.room}<br>${a.dept}</div>`).join("")||""}</div>`;
+  });
+ }
+ document.getElementById("timetable").innerHTML=html+"</div>";
+}
+function renderStats(){
+ document.getElementById("allocated").textContent=allocation.filter(x=>x.status==="Allocated").length;
+ document.getElementById("conflicts").textContent=allocation.filter(x=>x.status==="Not Allocated").length;
+}
+function slotText(s){return {1:"09:00 - 10:00",2:"10:00 - 11:00",3:"11:00 - 12:00",4:"12:00 - 13:00",5:"14:00 - 15:00",6:"15:00 - 16:00"}[s]}
+render();
+</script>
+</body>
+</html>
